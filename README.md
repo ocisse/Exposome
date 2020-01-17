@@ -1,4 +1,4 @@
-### Analysis of Human exposure tothe airbone fungal pathogens Pneumocystis
+### Human exposure to the airbone fungal pathogens Pneumocystis
 
 Manuscript under revision (will be updated soon)
 
