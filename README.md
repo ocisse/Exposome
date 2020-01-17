@@ -1,8 +1,8 @@
-## Analysis of Human exposure tothe airbone fungal pathogens Pneumocystis
+### Analysis of Human exposure tothe airbone fungal pathogens Pneumocystis
 
 Manuscript under revision (will be updated soon)
 
-## Directory structure
+### Directory structure
 * src/data/:  workhorse scripts
 * src/visualization/: R scripts
 * data/raw/: SRA ids
@@ -11,7 +11,7 @@ Manuscript under revision (will be updated soon)
 * data/processed/filtered_ctgs:		Filtered contigs
 * data/processed/raw_fig: raw pictures
 
-## Primary sequencing data from
+### Primary sequencing data from
 
 * Jiang C., et al. Cell. 2018 Sep 20;175(1):277-291.e31. doi: 10.1016/j.cell.2018.08.060.
 * Afshinnekoo E., et al. Cell Syst. 2015 Jul 29;1(1):72-87. 
