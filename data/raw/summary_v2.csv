@@ -1,0 +1,25 @@
+﻿sra,source,aowership,formalname,bioproject_accession,organism,elevation.m.,year,date.end,env_biome,env_feature,env_material,geo_loc_name,lat_lon,oldname,n_reads_pneumo_nucl,n_reads_pneumo_mt,n_total_reads
+SRR6399562,DNA,P1,chaoexpo38_I5,PRJNA421162,multiple,102,2014,11/6/14,air filter,air filter,air,USA_maryland_Bethesda,38.99791635 -77.09885595,chaoexpo38_I5,668615,105,81370159
+SRR6399569,DNA,P1,chaoexpo51_I5,PRJNA421162,multiple,125,2016,1/7/16,air filter,air filter,air,USA_california_San Diego,32.89389037 -117.2426647,chaoexpo51_I5,1164290,2087,87515965
+SRR6399789,DNA,P1,chaoexpo58_I5,PRJNA421162,multiple,51,2017,11/28/16,air filter,air filter,air,USA_california_Palo Alto,37.40988969 -122.1593497,chaoexpo58_I5,488970,583,61447835
+SRR6399684,DNA,P1,chaoexpo59_I5,PRJNA421162,multiple,51,2017,12/5/16,air filter,air filter,air,USA_california_Palo Alto,37.40988969 -122.1593497,chaoexpo59_I5,3930384,125699,69122523
+SRR6399527,DNA,P1,chaoexpo48_I6,PRJNA421162,multiple,425,2016,1/10/16,air filter,air filter,air,USA_california_Los Angeles,34.3637 -118.55116,chaoexpo48_I6,242500,2,68493408
+SRR6399614,DNA,P1,chaoexpo68_I6,PRJNA421162,multiple,29,2016,5/12/16,air filter,air filter,air,USA_new york_Cold Spring Harbor,40.85864131 -73.4679735,chaoexpo68_I6,640252,2176,56634040
+SRR6399870,DNA,P1,chaoexpo26_I12,PRJNA421162,multiple,51,2015,8/2/15,air filter,air filter,air,USA_california_Palo Alto,37.40988969 -122.1593497,chaoexpo26_I12,318571,80,49422187
+SRR6399808,DNA,P1,chaoexpo28_I12,PRJNA421162,multiple,102,2016,12/3/15,air filter,air filter,air,USA_maryland_Bethesda,38.99791635 -77.09885595,chaoexpo28_I12,636847,328,45397952
+SRR6399464,DNA,P1,chaoexpo32_I12,PRJNA421162,multiple,109,2016,6/17/16,air filter,air filter,air,USA_california_San Diego,32.887094 -117.24494,chaoexpo32_I12,743327,83,75614307
+SRR6399520,DNA,P1,chaoexpo66_I12,PRJNA421162,multiple,76,2017,1/2/17,air filter,air filter,air,USA_pennsylvania_West Hartford,40.24783815 -75.58747128,chaoexpo66_I12,1054493,141,66800060
+SRR6399888,DNA,P1,chaoexpo71_I12,PRJNA421162,multiple,76,2016,4/6/16,air filter,air filter,air,USA_pennsylvania_Pottstown,40.24783815 -75.58747128,chaoexpo71_I12,352994,973,71048240
+SRR6399671,DNA,P1,chaoexpo35_I15,PRJNA421162,multiple,17,2015,2/1/15,air filter,air filter,air,USA_california_San Francisco,37.83655946 -122.4802193,chaoexpo35_I15,404644,7,57429806
+SRR6399596,DNA,P1,chaoexpo36_I15,PRJNA421162,multiple,288,2015,10/3/15,air filter,air filter,air,USA_kentucky_Lexington,38.0498426 -84.50129234,chaoexpo36_I15,249123,13,66441164
+SRR6399953,DNA,P1,chaoexpo50_I15,PRJNA421162,multiple,49,2016,1/2/16,air filter,air filter,air,USA_connecticut_West Hartford,41.75736384 -72.75577191,chaoexpo50_I15,1421301,743,94139119
+SRR6399939,DNA,P3,chaoexpo52_I5,PRJNA421162,multiple,6,2016,3/7/16,air filter,air filter,air,USA_california_Redwood City,37.4852152 -122.2363548,chaoexpo52_I5,1643642,171,51995194
+SRR6399879,DNA,P3,chaoexpo52_I6,PRJNA421162,multiple,14,2016,3/29/16,air filter,air filter,air,USA_california_San Mateo,37.5629917 -122.3255254,chaoexpo52_I6,498310,1163,82285688
+SRR6399685,DNA,P3,chaoexpo59_I6,PRJNA421162,multiple,13,2016,12/11/16,air filter,air filter,air,USA_NA_New York City,40.7127837 -74.0059413,chaoexpo59_I6,591972,1445,62867255
+SRR6399803,DNA,P3,chaoexpo57_I12,PRJNA421162,multiple,14,2016,11/28/16,air filter,air filter,air,USA_california_San Mateo,37.5629917 -122.3255254,chaoexpo57_I12,7240749,261207,67067766
+SRR6399681,DNA,P3,chaoexpo58_I15,PRJNA421162,multiple,14,2016,12/5/16,air filter,air filter,air,USA_california_San Mateo,37.5629917 -122.3255254,chaoexpo58_I15,398933,679,56853387
+SRR6399802,DNA,P5,chaoexpo57_I6,PRJNA421162,multiple,72,2016,11/27/16,air filter,air filter,air,USA_california_Cupertino,37.3229978 -122.032183,chaoexpo57_I6,479385,442,54602220
+SRR6399682,DNA,P5,chaoexpo58_I6,PRJNA421162,multiple,72,2016,12/6/16,air filter,air filter,air,USA_california_Cupertino,37.3229978 -122.032183,chaoexpo58_I6,482795,485,62121563
+SRR6399512,DNA,P8,chaoexpo74_I12,PRJNA421162,multiple,51,2016,2/23/16,air filter,air filter,air,USA_california_Palo Alto,37.40988969 -122.1593497,chaoexpo74_I12,481365,1168,59583085
+SRR6399877,DNA,,chaoexpo12_I5,PRJNA421162,multiple,51,2015,8/11/15,air filter,air filter,air,USA_california_Palo Alto,37.40988969 -122.1593497,Expo0324B_I5,433669,61,64558662
+SRR6399753,DNA,,chaoexpo15_I6,PRJNA421162,multiple,1,2014,10/29/14,air filter,air filter,air,USA_massachusetts_Cambridge,42.36689094 -71.07552998,expo623P2-1_I6,229700,95,46823961

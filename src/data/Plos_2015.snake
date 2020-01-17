@@ -1,0 +1,72 @@
+"""
+Author: O. Cisse
+Affiliation: NIH
+Aim: A simple Snakemake workflow to screen air metagenome data
+Date: Fri Jul  5 17:10:56 EDT 2019
+Run: snakemake   -s Snakefile   
+Latest modification: 
+  - todo
+"""
+
+# generate the sample file w this
+# perl ../tools/generate_config_samples2.pl ../../data/raw/PlosOne_2015/fastq > PlosOne_2015_samples.yaml # don't use 
+# perl ../tools/generate_config_samples.pl ../../data/raw/PlosOne_2015/fastq > PlosOne_2015_samples_1.yaml
+# configfile: "PlosOne_2015_samples.yaml"
+configfile: "PlosOne_2015_samples_1.yaml"
+
+rule all:
+    input:
+        bam=expand("../../data/processed/mapping/PlosOne_2015/{sample}.bam", sample=config["samples"])
+
+#rule bowtie2:
+#    input:
+#        sample=["../../data/raw/PlosOne_2015/fastq/{sample}_1.fastq.gz", "../../data/raw/PlosOne_2015/fastq/{sample}_2.fastq.gz"]
+#        #lambda wildcards: config["samples"][wildcards.sample]
+#    output:
+#        "../../data/processed/mapping/PlosOne_2015/{sample}.bam"
+#    log:
+#        "../../data/processed/mapping/bowtie2/{sample}.log"
+#    params:
+#        index="../../data/raw/all_pneumo_transcripts_NO_rRNA",
+#        extra="--no-unal"    
+#    threads: 8
+#    wrapper:
+#        "0.35.1/bio/bowtie2/align"
+#
+# the problem is that there is inconsistencies between the _1 and _2 files which causes bowtie2 to fail and produce the core dump files
+
+rule bowtie2:
+    input:
+        sample=["../../data/raw/PlosOne_2015/fastq/{sample}_1.fastq.gz"]
+    output:
+        "../../data/processed/mapping/PlosOne_2015/{sample}.bam"
+    log:
+        "../../data/processed/mapping/bowtie2/{sample}.log"
+    params:
+        index="../../data/raw/all_pneumo_transcripts_NO_rRNA",
+        extra="--no-unal"
+    threads: 8
+    wrapper:
+        "0.35.1/bio/bowtie2/align"
+
+# test 
+# SRR6399815.bam
+# samtools view SRR6399815.bam | grep -v ^@ | awk 'NR%2==1 {print "@"$1"\n"$10"\n+\n"$11}' | gzip - > SRR6399815_mapped_1.fq.gz
+# samtools view SRR6399815.bam | grep -v ^@ | awk 'NR%2==0 {print "@"$1"\n"$10"\n+\n"$11}' | gzip - >  SRR6399815_mapped_2.fq.gz
+# try to exclude ribosomal RNA
+# wget -np https://rdp.cme.msu.edu/download/current_Fungi_unaligned.fa.gz --no-check-certificate
+# 
+# /hpcdata/dcr_cc/Ousmane_Data/projects/Collaborations/Exposome/data/raw/
+
+#samtools view SRR1749739.bam | grep -v ^@ | awk 'NR%2==1 {print "@"$1"\n"$10"\n+\n"$11}' | gzip - >  SRR1749739_mapped_1.fq.gz
+#samtools view SRR1749739.bam | grep -v ^@ | awk 'NR%2==0 {print "@"$1"\n"$10"\n+\n"$11}' | gzip - >  SRR1749739_mapped_2.fq.gz
+
+# attempt to clean up
+# bowtie2-build current_Fungi_unaligned.fa Fungal_28S_RDP
+# bowtie2 -x ../../../raw/Fungal_28S_RDP -1 SRR6399815_mapped_1.fq.gz -2 SRR6399815_mapped_2.fq.gz --sensitive-local -p 4 -S SRR1749739_ribo.sam
+
+#spades.py -1 SRR1749739_mapped_1.fq.gz -2 SRR1749739_mapped_2.fq.gz --meta -o SRR1749739_assembly
+# only 21 ctgs and all are ribosomal sequences with better hits against other organisms. Since this is by far the best sample (i.e. more sequences mapped)
+# the other have relatively few reads, so it's unlikely that the assembly will succeed (because of low coverage)
+# conclusion - no conclusive evidence of pneumocysits here
+

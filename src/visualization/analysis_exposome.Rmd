@@ -1,0 +1,112 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, eval=FALSE}
+library(ggplot2)
+library(rcompanion)
+library(gridExtra)
+data <- read.csv("../../data/raw/summary_v2.csv", header = T, sep = ",")
+data$pneumo_pct <- as.numeric(sprintf("%.1f",(((data$n_reads_pneumo_nucl + data$n_reads_pneumo_mt)/data$n_total_reads)*100)))
+data$ratio_nucl_vs_mt <- data$n_reads_pneumo_nucl/data$n_reads_pneumo_mt
+
+#plotNormalHistogram(as.numeric(data$pneumo_pct))
+pdf("../../data/processed/raw_fig/Figure_expo.pdf")
+par(mfrow=c(2,2))
+p1 <- subset(data, data$aowership == "P1")
+plot(p1$year,(p1$n_reads_pneumo_nucl/1e6), type = "p", col = "black", 
+     xlab = "Exposure years", 
+     ylab = "Pneumocystis  nuclear reads (x 1E6)",
+     main = "P1")
+
+p3 <- subset(data, data$aowership == "P3")
+plot(p3$year,(p3$n_reads_pneumo_nucl/1e6), type = "p", col = "black", 
+     xlab = "Exposure years", 
+     ylab = "Pneumocystis nuclear reads (x 1E6)",
+     main = "P3")
+
+p5 <- subset(data, data$aowership == "P5")
+plot(p5$year,(p5$n_reads_pneumo_nucl/1e6), type = "p",  col = "black", 
+     xlab = "Exposure years", 
+     ylab = "Pneumocystis  nuclear reads (x 1E6)",
+     main = "P5")
+
+p8 <- subset(data, data$aowership == "P8")
+plot(p8$year,(p8$n_reads_pneumo_nucl/1e6), type = "p",  col = "black", 
+     xlab = "Exposure years", 
+     #xlab = "",
+     #ylab = "",
+     #axes = F,
+     ylab = "Pneumocystis  nuclear reads (x 1E6)",
+     main = "P8")
+dev.off()
+```
+
+
+```{r, eval=FALSE}
+# pairwise data
+
+if (!require("gplots")) {
+   install.packages("gplots", dependencies = TRUE)
+   library(gplots)
+   }
+if (!require("RColorBrewer")) {
+   install.packages("RColorBrewer", dependencies = TRUE)
+   library(RColorBrewer)
+   }
+
+#########################################################
+### B) Reading in data and transform it into matrix format
+#########################################################
+
+idty <- read.csv("../../data/processed/filtered_ctgs/all_pairwise_nucl_id_annotated2_filtered.csv", header = T, sep = ",")
+# concatenate to form new id
+idty$composite_id <- paste(idty$Owner,idty$seq_id, sep = "_", collapse = NULL)
+rnames <- idty[,14]
+mat <- data.matrix(idty[,2:7])
+rownames(mat) <- rnames
+my_palette <- colorRampPalette(c("blue", "yellow", "orange"))(n = 299)
+
+png("../../data/processed/raw_fig/idty.png",    # create PNG for the heat map        
+width = 5*300,        # 5 x 300 pixels
+height = 5*300,
+res = 300,            # 300 pixels per inch
+pointsize = 7) 
+
+heatmap.2(mat,
+  cellnote = mat,  # same data set for cell labels
+  main = "Pairwise Nucleotide Identity (%)", # heat map title
+  notecol="black",      # change font color of cell labels to black
+  density.info="none",  # turns off density plot inside color legend
+  trace="none",         # turns off trace lines inside the heat map
+  margins =c(12,9),     # widens margins around plot
+  col=my_palette,       # use on color palette defined earlier
+  dendrogram="row",     # only draw a row dendrogram
+  Colv="NA"             # turn off column clustering
+  )
+dev.off()
+
+```
+### SNP heatmap
+```{r}
+### now a simple heatmap of SNP data convert in binayr
+library(gplots)
+snp <- read.csv("../../data/processed/Cell_2018/variants/merged_filtered_bin.csv", header = T)
+m_snp <- as.matrix(snp[,2:25])
+ids <- snp[,1]
+rownames(m_snp) <- ids
+my_palette <- c("white", "grey70","black")
+heatmap.2(m_snp, 
+          density.info="none",
+          trace="none",
+          margins =c(12,9),
+          cexCol = 1.2,
+          dendrogram="colum",
+          col=my_palette)
+dev.off()
+
+```
+
+
+

@@ -1,0 +1,553 @@
+# first part of the analysis is here (to be integrated soon)
+# /hpcdata/dcr_cc/Ousmane_Data/projects/Collaborations/Exposome/raw_data 
+# cp /hpcdata/dcr_cc/Ousmane_Data/projects/Collaborations/Exposome/raw_data/filtered_ctgs/all_filtered_ctgs.fasta \
+# /hpcdata/dcr_cc/Ousmane_Data/projects/Collaborations/Exposome/data/processed/
+# cp /hpcdata/dcr_cc/Ousmane_Data/projects/Collaborations/Exposome/raw_data/filtered_ctgs/all_pneumo_transcripts.fna \
+#/hpcdata/dcr_cc/Ousmane_Data/projects/Collaborations/Exposome/data/processed/
+
+rule rbh:
+    input:
+        ctgs="../../data/processed/all_filtered_ctgs.fasta",
+        pjru7="../../data/raw/GCF_001477535.1_Pneu_jiro_RU7_V2_rna.SP_ID_ADDED.fna",
+        pjse8="../../data/raw/Pjirovecii_SE8.transcripts.fa",
+        pjse2178="../../data/raw/Pjirovecii_SE2178.transcripts.fa",
+        pjc55="../../data/raw/Pneumocystis_jirovecii_Pj55.transcripts.fa",
+        pmac="../../data/raw/Pneumocystis_NAID_NANO_v1.transcripts.fa",
+        pcar="../../data/raw/GCF_001477545.1_Pneu_cari_B80_V3_rna.SP_ID_ADDED.fna",
+        pmur="../../data/raw/GCF_000349005.1_Pneumo_murina_B123_V2_rna.SP_ID_ADDED.fna",
+        sp="../../data/raw/GCF_000002945.1_ASM294v2_rna.fna",
+        cag="../../data/raw/GCF_000002545.3_ASM254v2_rna.fna",
+        asp="../../data/raw/GCF_000149205.2_ASM14920v2_rna.fna"
+
+    output:
+        protected("../../data/processed/rbh/rbbh.txt")
+
+    conda:
+        "envs/meta.yaml"
+
+    threads: 4
+
+    shell:
+        "perl ../tools/proteinortho_v2.3.0.pl -p=blastn -a={threads} {input.ctgs} "
+        "{input.pjru7} {input.pjse8} {input.pjse2178} {input.pjc55} "
+        "{input.pmac} {input.pcar} {input.pmur} {input.sp} {input.cag} {input.asp} "
+        " > {output}"
+
+# only four ctgs have significant hits outside Pneumocystis
+rule retrieve_rbh_ctgs:
+    input:
+        rules.rbh.output
+    params:
+        ctg1="SRR6399888.NODE_9_length_610_cov_1.742342",
+        ctg2="SRR6399953.NODE_14_length_759_cov_2.369318",
+        ctg3="SRR6399685.NODE_1_length_4852_cov_7.163435",
+        ctg4="SRR6399596.NODE_2_length_1507_cov_7.296832"
+    output:
+        ctg1="../../data/processed/rbh/ctg1.raw",
+        ctg2="../../data/processed/rbh/ctg2.raw",
+        ctg3="../../data/processed/rbh/ctg3.raw",
+        ctg4="../../data/processed/rbh/ctg4.raw"
+    
+    shell:
+        "grep {params.ctg1} {input} > {output.ctg1} "
+        "&& grep {params.ctg2} {input} > {output.ctg2} "
+        "&& grep {params.ctg3} {input} > {output.ctg3} "
+        "&& grep {params.ctg4} {input} > {output.ctg4}"
+
+rule build_db:
+    input:
+        ctgs="../../data/processed/all_filtered_ctgs.fasta",
+        pjru7="../../data/raw/GCF_001477535.1_Pneu_jiro_RU7_V2_rna.SP_ID_ADDED.fna",
+        pjse8="../../data/raw/Pjirovecii_SE8.transcripts.fa",
+        pjse2178="../../data/raw/Pjirovecii_SE2178.transcripts.fa",
+        pjc55="../../data/raw/Pneumocystis_jirovecii_Pj55.transcripts.fa",
+        pmac="../../data/raw/Pneumocystis_NAID_NANO_v1.transcripts.fa",
+        pcar="../../data/raw/GCF_001477545.1_Pneu_cari_B80_V3_rna.SP_ID_ADDED.fna",
+        pmur="../../data/raw/GCF_000349005.1_Pneumo_murina_B123_V2_rna.SP_ID_ADDED.fna",
+        sp="../../data/raw/GCF_000002945.1_ASM294v2_rna.fna",
+        cag="../../data/raw/GCF_000002545.3_ASM254v2_rna.fna",
+        asp="../../data/raw/GCF_000149205.2_ASM14920v2_rna.fna"
+    output:
+        protected("../../data/processed/rbh/db.fasta")
+        
+rule prepare_files:
+    input:
+        ctg1=rules.retrieve_rbh_ctgs.output.ctg1,
+        ctg2=rules.retrieve_rbh_ctgs.output.ctg2,
+        ctg3=rules.retrieve_rbh_ctgs.output.ctg3,
+        ctg4=rules.retrieve_rbh_ctgs.output.ctg4
+
+    output:
+        ctg1="../../data/processed/rbh/ctg1.flt",
+        ctg2="../../data/processed/rbh/ctg2.flt",
+        ctg3="../../data/processed/rbh/ctg3.flt",
+        ctg4="../../data/processed/rbh/ctg4.flt"
+    shell:
+        "perl ../tools/format_for_extraction.pl {input.ctg1} > {output.ctg1} "
+        "&& perl ../tools/format_for_extraction.pl {input.ctg2} > {output.ctg2} "
+        "&& perl ../tools/format_for_extraction.pl {input.ctg3} > {output.ctg3} "
+        "&& perl ../tools/format_for_extraction.pl {input.ctg4} > {output.ctg4} "
+
+rule create_fasta:
+    input:
+        db=rules.build_db.output,
+        ctg1=rules.prepare_files.output.ctg1,
+        ctg2=rules.prepare_files.output.ctg2,
+        ctg3=rules.prepare_files.output.ctg3,
+        ctg4=rules.prepare_files.output.ctg4
+    output:
+        ctg1="../../data/processed/rbh/ctg1.fasta",
+        ctg2="../../data/processed/rbh/ctg2.fasta",
+        ctg3="../../data/processed/rbh/ctg3.fasta",
+        ctg4="../../data/processed/rbh/ctg4.fasta",
+    conda:
+        "envs/bioperl.yaml"
+    shell:
+        "perl ../tools/retrieveFasta.pl {input.ctg1} {input.db} > {output.ctg1} "
+        "&& perl ../tools/retrieveFasta.pl {input.ctg2} {input.db} > {output.ctg2} "
+        "&& perl ../tools/retrieveFasta.pl {input.ctg3} {input.db} > {output.ctg3} "
+        "&& perl ../tools/retrieveFasta.pl {input.ctg4} {input.db} > {output.ctg4} "
+
+#rule check_seq_orientation:
+#    conda:
+#        "envs/emboss.yaml"
+#
+rule Mapping:
+    input:
+        ref="../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.fasta",
+        p1r1="../../data/external/Cell_2018/SRR6399562_1.fastq.gz",
+        p1r2="../../data/external/Cell_2018/SRR6399562_2.fastq.gz",
+        p2r1="../../data/external/Cell_2018/SRR6399464_1.fastq.gz",
+        p2r2="../../data/external/Cell_2018/SRR6399464_2.fastq.gz",
+        p3r1="../../data/external/Cell_2018/SRR6399512_1.fastq.gz",
+        p3r2="../../data/external/Cell_2018/SRR6399512_2.fastq.gz",
+        p4r1="../../data/external/Cell_2018/SRR6399520_1.fastq.gz",
+        p4r2="../../data/external/Cell_2018/SRR6399520_2.fastq.gz",
+        p5r1="../../data/external/Cell_2018/SRR6399527_1.fastq.gz",
+        p5r2="../../data/external/Cell_2018/SRR6399527_2.fastq.gz",
+        p6r1="../../data/external/Cell_2018/SRR6399569_1.fastq.gz",
+        p6r2="../../data/external/Cell_2018/SRR6399569_2.fastq.gz",
+        p7r1="../../data/external/Cell_2018/SRR6399596_1.fastq.gz",
+        p7r2="../../data/external/Cell_2018/SRR6399596_2.fastq.gz",
+        p8r1="../../data/external/Cell_2018/SRR6399614_1.fastq.gz",
+        p8r2="../../data/external/Cell_2018/SRR6399614_2.fastq.gz",
+        p9r1="../../data/external/Cell_2018/SRR6399671_1.fastq.gz",
+        p9r2="../../data/external/Cell_2018/SRR6399671_2.fastq.gz",
+        p10r1="../../data/external/Cell_2018/SRR6399681_1.fastq.gz",
+        p10r2="../../data/external/Cell_2018/SRR6399681_2.fastq.gz",
+        p11r1="../../data/external/Cell_2018/SRR6399682_1.fastq.gz",
+        p11r2="../../data/external/Cell_2018/SRR6399682_2.fastq.gz",
+        p12r1="../../data/external/Cell_2018/SRR6399753_1.fastq.gz",
+        p12r2="../../data/external/Cell_2018/SRR6399753_2.fastq.gz",
+        p13r1="../../data/external/Cell_2018/SRR6399789_1.fastq.gz",
+        p13r2="../../data/external/Cell_2018/SRR6399789_2.fastq.gz",
+        p14r1="../../data/external/Cell_2018/SRR6399802_1.fastq.gz",
+        p14r2="../../data/external/Cell_2018/SRR6399802_2.fastq.gz",
+        p15r1="../../data/external/Cell_2018/SRR6399808_1.fastq.gz",
+        p15r2="../../data/external/Cell_2018/SRR6399808_2.fastq.gz",
+        p16r1="../../data/external/Cell_2018/SRR6399870_1.fastq.gz",
+        p16r2="../../data/external/Cell_2018/SRR6399870_2.fastq.gz",
+        p17r1="../../data/external/Cell_2018/SRR6399684_1.fastq.gz",
+        p17r2="../../data/external/Cell_2018/SRR6399684_2.fastq.gz",
+        p18r1="../../data/external/Cell_2018/SRR6399888_1.fastq.gz",
+        p18r2="../../data/external/Cell_2018/SRR6399888_2.fastq.gz",
+        p19r1="../../data/external/Cell_2018/SRR6399953_1.fastq.gz",
+        p19r2="../../data/external/Cell_2018/SRR6399953_2.fastq.gz",
+        p20r1="../../data/external/Cell_2018/SRR6399939_1.fastq.gz",
+        p20r2="../../data/external/Cell_2018/SRR6399939_2.fastq.gz",
+        p21r1="../../data/external/Cell_2018/SRR6399879_1.fastq.gz",
+        p21r2="../../data/external/Cell_2018/SRR6399879_2.fastq.gz",
+        p22r1="../../data/external/Cell_2018/SRR6399803_1.fastq.gz",
+        p22r2="../../data/external/Cell_2018/SRR6399803_2.fastq.gz",
+        p23r1="../../data/external/Cell_2018/SRR6399685_1.fastq.gz",
+        p23r2="../../data/external/Cell_2018/SRR6399685_2.fastq.gz",
+        p24r1="../../data/external/Cell_2018/SRR6399877_1.fastq.gz",
+        p24r2="../../data/external/Cell_2018/SRR6399877_2.fastq.gz"
+
+    output:
+        p1b1=protected("../../data/processed/Cell_2018/mapping/SRR6399562.bam"),
+        p1b2=protected("../../data/processed/Cell_2018/mapping/SRR6399464.bam"),
+        p8b1=protected("../../data/processed/Cell_2018/mapping/SRR6399512.bam"),
+        p1b3=protected("../../data/processed/Cell_2018/mapping/SRR6399520.bam"),
+        p1b4=protected("../../data/processed/Cell_2018/mapping/SRR6399527.bam"),
+        p1b5=protected("../../data/processed/Cell_2018/mapping/SRR6399569.bam"),
+        p1b6=protected("../../data/processed/Cell_2018/mapping/SRR6399596.bam"),
+        p1b7=protected("../../data/processed/Cell_2018/mapping/SRR6399614.bam"),
+        p1b8=protected("../../data/processed/Cell_2018/mapping/SRR6399671.bam"),
+        p3b1=protected("../../data/processed/Cell_2018/mapping/SRR6399681.bam"),
+	p5b1=protected("../../data/processed/Cell_2018/mapping/SRR6399682.bam"),
+	pu2b1=protected("../../data/processed/Cell_2018/mapping/SRR6399753.bam"),
+	p1b9=protected("../../data/processed/Cell_2018/mapping/SRR6399789.bam"),
+        p5b2=protected("../../data/processed/Cell_2018/mapping/SRR6399802.bam"),
+	p1b10=protected("../../data/processed/Cell_2018/mapping/SRR6399808.bam")
+	p1b11=protected("../../data/processed/Cell_2018/mapping/SRR6399870.bam")
+	p1b12=protected("../../data/processed/Cell_2018/mapping/SRR6399684.bam")
+	p1b13=protected("../../data/processed/Cell_2018/mapping/SRR6399888.bam")
+	p1b14=protected("../../data/processed/Cell_2018/mapping/SRR6399953.bam")
+	p1b15=protected("../../data/processed/Cell_2018/mapping/SRR6399939.bam")
+	p1b16=protected("../../data/processed/Cell_2018/mapping/SRR6399879.bam")
+	p1b17=protected("../../data/processed/Cell_2018/mapping/SRR6399803.bam")
+	p1b18=protected("../../data/processed/Cell_2018/mapping/SRR6399685.bam")
+	p1b19=protected("../../data/processed/Cell_2018/mapping/SRR6399877.bam")
+
+    threads: 8
+
+    run:
+        shell("bwa mem -M -t {threads} {input.ref} {input.p1r1} {input.p1r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p2r1} {input.p2r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b2}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p3r1} {input.p3r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p8b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p4r1} {input.p4r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b3}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p5r1} {input.p5r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b4}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p6r1} {input.p6r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b5}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p7r1} {input.p7r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b6}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p8r1} {input.p8r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b7}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p9r1} {input.p9r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b8}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p10r1} {input.p10r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p3b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p11r1} {input.p11r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p5b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p12r1} {input.p12r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.pu2b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p13r1} {input.p13r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b9}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p14r1} {input.p14r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p5b2}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p15r1} {input.p15r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b10}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p16r1} {input.p16r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b11}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p17r1} {input.p17r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b12}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p18r1} {input.p18r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b13}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p19r1} {input.p19r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b14}")
+	shell("bwa mem -M -t {threads} {input.ref} {input.p20r1} {input.p20r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b15}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p21r1} {input.p21r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b16}")
+	shell("bwa mem -M -t {threads} {input.ref} {input.p22r1} {input.p22r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b17}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p23r1} {input.p23r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b18}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p24r1} {input.p24r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b19}")
+
+rule SNP_calling:
+    input:
+        ref="../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.fasta",
+        b1="../../data/processed/Cell_2018/mapping/SRR6399562.bam",b2="../../data/processed/Cell_2018/mapping/SRR6399464.bam",
+        b3="../../data/processed/Cell_2018/mapping/SRR6399512.bam",b4="../../data/processed/Cell_2018/mapping/SRR6399520.bam",
+        b5="../../data/processed/Cell_2018/mapping/SRR6399527.bam",b6="../../data/processed/Cell_2018/mapping/SRR6399569.bam",
+        b7="../../data/processed/Cell_2018/mapping/SRR6399596.bam",b8="../../data/processed/Cell_2018/mapping/SRR6399614.bam",
+        b9="../../data/processed/Cell_2018/mapping/SRR6399671.bam",b10="../../data/processed/Cell_2018/mapping/SRR6399681.bam",
+        b11="../../data/processed/Cell_2018/mapping/SRR6399682.bam",b12="../../data/processed/Cell_2018/mapping/SRR6399753.bam",
+        b13="../../data/processed/Cell_2018/mapping/SRR6399789.bam",b14="../../data/processed/Cell_2018/mapping/SRR6399802.bam",
+        b15="../../data/processed/Cell_2018/mapping/SRR6399808.bam",
+        b16="../../data/processed/Cell_2018/mapping/SRR6399870.bam",b17="../../data/processed/Cell_2018/mapping/SRR6399684.bam",
+        b18="../../data/processed/Cell_2018/mapping/SRR6399888.bam",b19="../../data/processed/Cell_2018/mapping/SRR6399953.bam",
+        b20="../../data/processed/Cell_2018/mapping/SRR6399939.bam",b21="../../data/processed/Cell_2018/mapping/SRR6399879.bam",
+        b22="../../data/processed/Cell_2018/mapping/SRR6399803.bam",b23="../../data/processed/Cell_2018/mapping/SRR6399685.bam", 
+        b24="../../data/processed/Cell_2018/mapping/SRR6399877.bam"        
+
+    output:
+        b1="../../data/processed/Cell_2018/variants/SRR6399562.vcf",b2="../../data/processed/Cell_2018/variants/SRR6399464.vcf"
+        b3="../../data/processed/Cell_2018/variants/SRR6399512.vcf",b4="../../data/processed/Cell_2018/variants/SRR6399520.vcf",
+        b5="../../data/processed/Cell_2018/variants/SRR6399527.vcf",b6="../../data/processed/Cell_2018/variants/SRR6399569.vcf",
+        b7="../../data/processed/Cell_2018/variants/SRR6399596.vcf",b8="../../data/processed/Cell_2018/variants/SRR6399614.vcf",
+        b9="../../data/processed/Cell_2018/variants/SRR6399671.vcf",b10="../../data/processed/Cell_2018/variants/SRR6399681.vcf",
+        b11="../../data/processed/Cell_2018/variants/SRR6399682.vcf",
+        b12="../../data/processed/Cell_2018/variants/SRR6399753.vcf",
+        b13="../../data/processed/Cell_2018/variants/SRR6399789.vcf",
+        b14="../../data/processed/Cell_2018/variants/SRR6399802.vcf"
+        b15="../../data/processed/Cell_2018/variants/SRR6399808.vcf"
+        b16="../../data/processed/Cell_2018/variants/SRR6399870.vcf",b17="../../data/processed/Cell_2018/variants/SRR6399684.vcf",
+        b18="../../data/processed/Cell_2018/variants/SRR6399888.vcf",b19="../../data/processed/Cell_2018/variants/SRR6399953.vcf",
+        b20="../../data/processed/Cell_2018/variants/SRR6399939.vcf",b21="../../data/processed/Cell_2018/variants/SRR6399879.vcf",
+        b22="../../data/processed/Cell_2018/variants/SRR6399803.vcf",b23="../../data/processed/Cell_2018/variants/SRR6399685.vcf",
+        b24="../../data/processed/Cell_2018/variants/SRR6399877.vcf"  
+    params:
+        p="1"
+
+    run:
+        shell("freebayes -f {input.ref} {input.b1}  -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b1}")
+        shell("freebayes -f {input.ref} {input.b2}  -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b2}")
+        shell("freebayes -f {input.ref} {input.b3} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b3}")
+        shell("freebayes -f {input.ref} {input.b4} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b4}")
+        shell("freebayes -f {input.ref} {input.b5} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b5}")
+        shell("freebayes -f {input.ref} {input.b6} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b6}")
+        shell("freebayes -f {input.ref} {input.b7} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b7}")
+        shell("freebayes -f {input.ref} {input.b8} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b8}")
+        shell("freebayes -f {input.ref} {input.b9} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b9}")
+        shell("freebayes -f {input.ref} {input.b10} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b10}")
+        shell("freebayes -f {input.ref} {input.b11} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b11}")
+        shell("freebayes -f {input.ref} {input.b12} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b12}")
+        shell("freebayes -f {input.ref} {input.b13} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b13}")
+        shell("freebayes -f {input.ref} {input.b14} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b14}")
+        shell("freebayes -f {input.ref} {input.b15} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b15}")
+        shell("freebayes -f {input.ref} {input.b16} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b16}")
+        shell("freebayes -f {input.ref} {input.b17} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b17}")
+        shell("freebayes -f {input.ref} {input.b18} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b18}")
+        shell("freebayes -f {input.ref} {input.b19} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b19}") 
+        shell("freebayes -f {input.ref} {input.b20} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b20}")
+        shell("freebayes -f {input.ref} {input.b21} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b21}")
+        shell("freebayes -f {input.ref} {input.b22} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b22}")
+        shell("freebayes -f {input.ref} {input.b23} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b23}")
+        shell("freebayes -f {input.ref} {input.b24} -p {params.p} --gvcf -g 1000 | vcffilter -f \"QUAL > 20\" > {output.b24}")
+
+# slow
+rule process_vcf:
+    output:
+        raw="../../data/processed/Cell_2018/variants/merged.csv",
+        filtered="../../data/processed/Cell_2018/variants/merged_filtered.csv",
+        binary="../../data/processed/Cell_2018/variants/merged_filtered_bin.csv"
+    log:
+        c="../../data/processed/Cell_2018/variants/logs/compare_vcfs.log"
+    run:
+        shell("(perl ../tools/compare_vcfs.pl > {output.raw}) 2> {log.c}")
+        shell("perl ../tools/remove_singletons.pl {output.raw} > {output.filtered}")
+        shell("perl  ../tools/convert_in_binary.pl {output.filtered} > {output.binary}")
+
+## prepare the gene bed file
+# grep mRNA ../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.gff | cut -f 1,4,5 > ../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.bed
+# perl -pi.old -E 's/\.1//' ../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.bed
+# # non coding
+# bedtools subtract   
+#
+# # grep mRNA ../../data/processed/Pmac/Funannotate/PMAC_NAID_v2/predict_results/Pneumocystis_macacae_NIAID.gff3 \
+# # | cut -f 1,4,5 > ../../data/processed/Pmac/Funannotate/PMAC_NAID_v2/predict_results/Pneumocystis_macacae_NIAID.genes.bed
+# #perl -pi.old -E 's/Chr/Pmac_Chr/' ../../data/processed/Pmac/Funannotate/PMAC_NAID_v2/predict_results/Pneumocystis_macacae_NIAID.genes.bed
+# # perl -pi.old -E 's/_contig/Pmac_contig/' ../../data/processed/Pmac/Funannotate/PMAC_NAID_v2/predict_results/Pneumocystis_macacae_NIAID.genes.bed
+# c
+# # now to determine the locations of breaks
+#
+#
+# the goal here is to find out how many of these positions fall in msg regions
+# first 
+rule annotate_SNP_position:
+    input:
+        g="../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.fasta",
+        binary="../../data/processed/Cell_2018/variants/merged_filtered_bin.csv", 
+        msg="../../data/raw/Pj_MSGs_Liang.cds"
+
+    output:
+        psl=temp("../../data/processed/Cell_2018/variants/msg.psl"),
+        bed=temp("../../data/processed/Cell_2018/variants/msg.bed"),
+        binbed=temp("../../data/processed/Cell_2018/variants/merged_filtered_bin.bed"),
+        ann="../../data/processed/Cell_2018/variants/merged_filtered_bin.ann"
+
+    run:
+        shell("blat {input.g} {input.msg} {output.psl} -minScore=30")
+        shell("grep LFWA {output.psl} |  cut -f 14,16,17 > {output.bed}")
+        shell("../tools/create_pseudo_bed.pl {input.binary} > {output.binbed}")
+        shell("annotateBed -i {output.binbed} -files {output.bed} > {output.ann}")
+        shell("echo \'# pos in MSGS:\' && grep -v 0.000000 {output.ann} | wc -l")
+
+# conda version is not working
+# module load angsd 
+rule ANGSD:
+    input:
+        bam="../../data/processed/Cell_2018/mapping/all_bam.txt"
+
+    output:
+        o="../../data/processed/Cell_2018/PCA/out"
+
+    threads: 5
+
+    params: q="20"
+    shell:
+        "echo > {output.o} && "
+        "angsd -bam {input.bam}  -minMapQ {params.q} -GL 2  -doMajorMinor 1 -doMaf 1 -SNP_pval 2e-6 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 -P {threads} -out {output.o}"
+
+rule vcftools_plink_for_PCA:
+    input:
+        ref="../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.fasta",
+        b1="../../data/processed/Cell_2018/mapping/SRR6399562.bam",b2="../../data/processed/Cell_2018/mapping/SRR6399671.bam",b3="../../data/processed/Cell_2018/mapping/SRR6399870.bam",
+        b4="../../data/processed/Cell_2018/mapping/SRR6399596.bam",b5="../../data/processed/Cell_2018/mapping/SRR6399808.bam",b6="../../data/processed/Cell_2018/mapping/SRR6399569.bam",
+        b7="../../data/processed/Cell_2018/mapping/SRR6399789.bam",b8="../../data/processed/Cell_2018/mapping/SRR6399684.bam",b9="../../data/processed/Cell_2018/mapping/SRR6399527.bam",
+        b10="../../data/processed/Cell_2018/mapping/SRR6399614.bam",b11="../../data/processed/Cell_2018/mapping/SRR6399464.bam",b12="../../data/processed/Cell_2018/mapping/SRR6399520.bam",
+        b13="../../data/processed/Cell_2018/mapping/SRR6399888.bam",b14="../../data/processed/Cell_2018/mapping/SRR6399953.bam",b15="../../data/processed/Cell_2018/mapping/SRR6399939.bam",
+        b16="../../data/processed/Cell_2018/mapping/SRR6399879.bam",b17="../../data/processed/Cell_2018/mapping/SRR6399803.bam",b18="../../data/processed/Cell_2018/mapping/SRR6399685.bam",
+        b19="../../data/processed/Cell_2018/mapping/SRR6399681.bam",b20="../../data/processed/Cell_2018/mapping/SRR6399802.bam",b21="../../data/processed/Cell_2018/mapping/SRR6399682.bam",
+        b22="../../data/processed/Cell_2018/mapping/SRR6399512.bam",b23="../../data/processed/Cell_2018/mapping/SRR6399877.bam",b24="../../data/processed/Cell_2018/mapping/SRR6399753.bam"
+
+    output:
+        raw="../../data/processed/Cell_2018/Plink/raw.fermikit.vcf",
+        flt="../../data/processed/Cell_2018/Plink/flt.fermikit.vcf",
+        plraw="../../data/processed/Cell_2018/Plink/flt.raw"
+        
+
+    run:
+        shell("htsbox pileup -cuf {input.ref} {input.b1} {input.b2} {input.b3} {input.b4} {input.b5} {input.b6} {input.b7} {input.b8} {input.b9} {input.b10} "
+              "{input.b11} {input.b12} {input.b13} {input.b14} {input.b15} {input.b16} {input.b17} {input.b18} {input.b19} {input.b20} {input.b21} "
+              " {input.b22} {input.b23} {input.b24} > {output.raw}")
+        shell("k8 ~/utils/fermikit/fermi.kit/hapdip.js vcfsum -f {output.raw} > {output.flt}")
+        shell("echo > {output.plraw} && vcftools --vcf {output.flt} --plink --out {output.plraw}")
+        shell("plink --file {output.plraw} -genome --noweb --allow-no-sex --out {output.plraw}")
+
+#        Do some multidimensional scaling:
+#        plink --file ../../data/processed/Cell_2018/Plink/flt.raw --read-genome ../../data/processed/Cell_2018/Plink/flt.raw.genome --cluster --mds-plot 2 --noweb
+#        mv plink.* ../../data/processed/Cell_2018/Plink/
+#
+
+rule per_base_cov:
+    input:
+        b1="../../data/processed/Cell_2018/mapping/SRR6399877.bam",b2="../../data/processed/Cell_2018/mapping/SRR6399685.bam",b3="../../data/processed/Cell_2018/mapping/SRR6399803.bam",
+        b4="../../data/processed/Cell_2018/mapping/SRR6399879.bam",b5="../../data/processed/Cell_2018/mapping/SRR6399939.bam",b6="../../data/processed/Cell_2018/mapping/SRR6399953.bam",
+        b7="../../data/processed/Cell_2018/mapping/SRR6399888.bam",b8="../../data/processed/Cell_2018/mapping/SRR6399684.bam",b9="../../data/processed/Cell_2018/mapping/SRR6399870.bam",
+        b10="../../data/processed/Cell_2018/mapping/SRR6399681.bam",b11="../../data/processed/Cell_2018/mapping/SRR6399682.bam",b12="../../data/processed/Cell_2018/mapping/SRR6399753.bam",
+        b13="../../data/processed/Cell_2018/mapping/SRR6399789.bam",b14="../../data/processed/Cell_2018/mapping/SRR6399802.bam",b15="../../data/processed/Cell_2018/mapping/SRR6399808.bam",
+        b16="../../data/processed/Cell_2018/mapping/SRR6399671.bam",b17="../../data/processed/Cell_2018/mapping/SRR6399614.bam",b18="../../data/processed/Cell_2018/mapping/SRR6399596.bam",
+        b19="../../data/processed/Cell_2018/mapping/SRR6399569.bam",b20="../../data/processed/Cell_2018/mapping/SRR6399527.bam",b21="../../data/processed/Cell_2018/mapping/SRR6399520.bam",
+        b22="../../data/processed/Cell_2018/mapping/SRR6399512.bam",b23="../../data/processed/Cell_2018/mapping/SRR6399464.bam",b24="../../data/processed/Cell_2018/mapping/SRR6399562.bam"
+
+    output:
+        b1="../../data/processed/Cell_2018/mapping/SRR6399877.cov",b2="../../data/processed/Cell_2018/mapping/SRR6399685.cov",b3="../../data/processed/Cell_2018/mapping/SRR6399803.cov",
+        b4="../../data/processed/Cell_2018/mapping/SRR6399879.cov",b5="../../data/processed/Cell_2018/mapping/SRR6399939.cov",b6="../../data/processed/Cell_2018/mapping/SRR6399953.cov",
+        b7="../../data/processed/Cell_2018/mapping/SRR6399888.cov",b8="../../data/processed/Cell_2018/mapping/SRR6399684.cov",b9="../../data/processed/Cell_2018/mapping/SRR6399870.cov",
+        b10="../../data/processed/Cell_2018/mapping/SRR6399681.cov",
+        b11="../../data/processed/Cell_2018/mapping/SRR6399682.cov",
+        b12="../../data/processed/Cell_2018/mapping/SRR6399753.cov",
+        b13="../../data/processed/Cell_2018/mapping/SRR6399789.cov",
+        b14="../../data/processed/Cell_2018/mapping/SRR6399802.cov",
+        b15="../../data/processed/Cell_2018/mapping/SRR6399808.cov",
+        b16="../../data/processed/Cell_2018/mapping/SRR6399671.cov",b17="../../data/processed/Cell_2018/mapping/SRR6399614.cov",b18="../../data/processed/Cell_2018/mapping/SRR6399596.cov",
+        b19="../../data/processed/Cell_2018/mapping/SRR6399569.cov",b20="../../data/processed/Cell_2018/mapping/SRR6399527.cov",b21="../../data/processed/Cell_2018/mapping/SRR6399520.cov",
+        b22="../../data/processed/Cell_2018/mapping/SRR6399512.cov",b23="../../data/processed/Cell_2018/mapping/SRR6399464.cov",b24="../../data/processed/Cell_2018/mapping/SRR6399562.cov"
+ 
+    run:
+        shell("genomeCoverageBed -ibam {input.b1} -d > {output.b1}")
+        shell("genomeCoverageBed -ibam {input.b2} -d > {output.b2}")
+        shell("genomeCoverageBed -ibam {input.b3} -d > {output.b3}")
+        shell("genomeCoverageBed -ibam {input.b4} -d > {output.b4}")
+        shell("genomeCoverageBed -ibam {input.b5} -d > {output.b5}")
+        shell("genomeCoverageBed -ibam {input.b6} -d > {output.b6}")
+        shell("genomeCoverageBed -ibam {input.b7} -d > {output.b7}")
+        shell("genomeCoverageBed -ibam {input.b8} -d > {output.b8}")
+        shell("genomeCoverageBed -ibam {input.b9} -d > {output.b9}")
+        shell("genomeCoverageBed -ibam {input.b10} -d > {output.b10}")
+        shell("genomeCoverageBed -ibam {input.b11} -d > {output.b11}")
+        shell("genomeCoverageBed -ibam {input.b12} -d > {output.b12}")
+        shell("genomeCoverageBed -ibam {input.b13} -d > {output.b13}")
+        shell("genomeCoverageBed -ibam {input.b14} -d > {output.b14}")
+        shell("genomeCoverageBed -ibam {input.b15} -d > {output.b15}")
+        shell("genomeCoverageBed -ibam {input.b16} -d > {output.b16}")
+        shell("genomeCoverageBed -ibam {input.b17} -d > {output.b17}")
+        shell("genomeCoverageBed -ibam {input.b18} -d > {output.b18}")
+        shell("genomeCoverageBed -ibam {input.b19} -d > {output.b19}")
+        shell("genomeCoverageBed -ibam {input.b20} -d > {output.b20}")
+        shell("genomeCoverageBed -ibam {input.b21} -d > {output.b21}")
+        shell("genomeCoverageBed -ibam {input.b22} -d > {output.b22}")
+        shell("genomeCoverageBed -ibam {input.b23} -d > {output.b23}")
+        shell("genomeCoverageBed -ibam {input.b24} -d > {output.b24}")
+
+# manual calculation of coverage breath - 
+#
+# manual way to do this - awk is a problem for snakemake for no w
+# ls ../../data/processed/Cell_2018/mapping/*.bam | while read f; do samtools index $f; done
+#
+# # set shell variables to your file-names
+# REF_GENOME_FILE"../../data/raw/GCA_001477535.1_Pneu_jiro_RU7_V2_genomic.fasta
+# MIN_COVERAGE_DEPTH=2
+# samtools mpileup ../../data/processed/Cell_2018/mapping/SRR6399789.bam | awk -v X="${MIN_COVERAGE_DEPTH}" '$4>=X' | wc -l # 134243
+# Pj genome size = 8396240
+# Result: breadth of reference genome coverage
+# total number of covered bases: 134243 (with >= 2X coverage depth)
+# Depth of coverage (average per-base coverage): 134243/8396240 * 100 = 1.5%
+#
+#  TO DO compare the depths of different metagenomes
+#
+rule quantify_human_in_reads:
+    input:
+        ref="/hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/human/GCF_000001405.39_GRCh38.p13_genomic.fna",
+        p1r1="../../data/external/Cell_2018/SRR6399562_1.fastq.gz",p1r2="../../data/external/Cell_2018/SRR6399562_2.fastq.gz",
+        p2r1="../../data/external/Cell_2018/SRR6399464_1.fastq.gz",p2r2="../../data/external/Cell_2018/SRR6399464_2.fastq.gz",
+        p3r1="../../data/external/Cell_2018/SRR6399512_1.fastq.gz",p3r2="../../data/external/Cell_2018/SRR6399512_2.fastq.gz",
+        p4r1="../../data/external/Cell_2018/SRR6399520_1.fastq.gz",p4r2="../../data/external/Cell_2018/SRR6399520_2.fastq.gz",
+        p5r1="../../data/external/Cell_2018/SRR6399527_1.fastq.gz",p5r2="../../data/external/Cell_2018/SRR6399527_2.fastq.gz",
+        p6r1="../../data/external/Cell_2018/SRR6399569_1.fastq.gz",p6r2="../../data/external/Cell_2018/SRR6399569_2.fastq.gz",
+        p7r1="../../data/external/Cell_2018/SRR6399596_1.fastq.gz",p7r2="../../data/external/Cell_2018/SRR6399596_2.fastq.gz",
+        p8r1="../../data/external/Cell_2018/SRR6399614_1.fastq.gz",p8r2="../../data/external/Cell_2018/SRR6399614_2.fastq.gz",
+        p9r1="../../data/external/Cell_2018/SRR6399671_1.fastq.gz",p9r2="../../data/external/Cell_2018/SRR6399671_2.fastq.gz",
+        p10r1="../../data/external/Cell_2018/SRR6399681_1.fastq.gz",p10r2="../../data/external/Cell_2018/SRR6399681_2.fastq.gz",
+        p11r1="../../data/external/Cell_2018/SRR6399682_1.fastq.gz",p11r2="../../data/external/Cell_2018/SRR6399682_2.fastq.gz",
+        p12r1="../../data/external/Cell_2018/SRR6399753_1.fastq.gz",p12r2="../../data/external/Cell_2018/SRR6399753_2.fastq.gz",
+        p13r1="../../data/external/Cell_2018/SRR6399789_1.fastq.gz",p13r2="../../data/external/Cell_2018/SRR6399789_2.fastq.gz",
+        p14r1="../../data/external/Cell_2018/SRR6399802_1.fastq.gz",p14r2="../../data/external/Cell_2018/SRR6399802_2.fastq.gz",
+        p15r1="../../data/external/Cell_2018/SRR6399808_1.fastq.gz",p15r2="../../data/external/Cell_2018/SRR6399808_2.fastq.gz",
+        p16r1="../../data/external/Cell_2018/SRR6399870_1.fastq.gz",p16r2="../../data/external/Cell_2018/SRR6399870_2.fastq.gz",
+        p17r1="../../data/external/Cell_2018/SRR6399684_1.fastq.gz",p17r2="../../data/external/Cell_2018/SRR6399684_2.fastq.gz",
+        p18r1="../../data/external/Cell_2018/SRR6399888_1.fastq.gz",p18r2="../../data/external/Cell_2018/SRR6399888_2.fastq.gz",
+        p19r1="../../data/external/Cell_2018/SRR6399953_1.fastq.gz",p19r2="../../data/external/Cell_2018/SRR6399953_2.fastq.gz",
+        p20r1="../../data/external/Cell_2018/SRR6399939_1.fastq.gz",p20r2="../../data/external/Cell_2018/SRR6399939_2.fastq.gz",
+        p21r1="../../data/external/Cell_2018/SRR6399879_1.fastq.gz",p21r2="../../data/external/Cell_2018/SRR6399879_2.fastq.gz",
+        p22r1="../../data/external/Cell_2018/SRR6399803_1.fastq.gz",p22r2="../../data/external/Cell_2018/SRR6399803_2.fastq.gz",
+        p23r1="../../data/external/Cell_2018/SRR6399685_1.fastq.gz",p23r2="../../data/external/Cell_2018/SRR6399685_2.fastq.gz",
+        p24r1="../../data/external/Cell_2018/SRR6399877_1.fastq.gz",p24r2="../../data/external/Cell_2018/SRR6399877_2.fastq.gz"
+
+    output:
+        p1b1=protected("../../data/processed/Cell_2018/mapping/SRR6399562_hum.bam"),
+        p1b2=protected("../../data/processed/Cell_2018/mapping/SRR6399464_hum.bam"),
+        p8b1=protected("../../data/processed/Cell_2018/mapping/SRR6399512_hum.bam"),
+        p1b3=protected("../../data/processed/Cell_2018/mapping/SRR6399520_hum.bam"),
+        p1b4=protected("../../data/processed/Cell_2018/mapping/SRR6399527_hum.bam"),
+        p1b5=protected("../../data/processed/Cell_2018/mapping/SRR6399569_hum.bam"),
+        p1b6=protected("../../data/processed/Cell_2018/mapping/SRR6399596_hum.bam"),
+        p1b7=protected("../../data/processed/Cell_2018/mapping/SRR6399614_hum.bam"),
+        p1b8=protected("../../data/processed/Cell_2018/mapping/SRR6399671_hum.bam"),
+        p3b1=protected("../../data/processed/Cell_2018/mapping/SRR6399681_hum.bam"),
+        p5b1=protected("../../data/processed/Cell_2018/mapping/SRR6399682_hum.bam"),
+        pu2b1=protected("../../data/processed/Cell_2018/mapping/SRR6399753_hum.bam"),
+        p1b9=protected("../../data/processed/Cell_2018/mapping/SRR6399789_hum.bam"),
+        p5b2=protected("../../data/processed/Cell_2018/mapping/SRR6399802_hum.bam"),
+        p1b10=protected("../../data/processed/Cell_2018/mapping/SRR6399808_hum.bam"),
+        p1b11=protected("../../data/processed/Cell_2018/mapping/SRR6399870_hum.bam"),
+        p1b12=protected("../../data/processed/Cell_2018/mapping/SRR6399684_hum.bam"),
+        p1b13=protected("../../data/processed/Cell_2018/mapping/SRR6399888_hum.bam"),
+        p1b14=protected("../../data/processed/Cell_2018/mapping/SRR6399953_hum.bam"),
+        p1b15=protected("../../data/processed/Cell_2018/mapping/SRR6399939_hum.bam"),
+        p1b16=protected("../../data/processed/Cell_2018/mapping/SRR6399879_hum.bam"),
+        p1b17=protected("../../data/processed/Cell_2018/mapping/SRR6399803_hum.bam"),
+        p1b18=protected("../../data/processed/Cell_2018/mapping/SRR6399685_hum.bam"),
+        p1b19=protected("../../data/processed/Cell_2018/mapping/SRR6399877_hum.bam")
+
+    threads: 8
+
+    run:
+        shell("bwa mem -M -t {threads} {input.ref} {input.p1r1} {input.p1r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p2r1} {input.p2r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b2}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p3r1} {input.p3r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p8b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p4r1} {input.p4r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b3}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p5r1} {input.p5r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b4}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p6r1} {input.p6r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b5}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p7r1} {input.p7r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b6}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p8r1} {input.p8r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b7}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p9r1} {input.p9r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b8}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p10r1} {input.p10r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p3b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p11r1} {input.p11r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p5b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p12r1} {input.p12r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.pu2b1}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p13r1} {input.p13r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b9}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p14r1} {input.p14r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p5b2}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p15r1} {input.p15r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b10}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p16r1} {input.p16r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b11}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p17r1} {input.p17r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b12}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p18r1} {input.p18r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b13}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p19r1} {input.p19r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b14}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p20r1} {input.p20r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b15}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p21r1} {input.p21r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b16}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p22r1} {input.p22r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b17}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p23r1} {input.p23r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b18}")
+        shell("bwa mem -M -t {threads} {input.ref} {input.p24r1} {input.p24r2} | samtools view -f 3 -F 4 -F 8 -F 256 -F 2048 -q 30 -bS - | samtools sort -@ {threads} -O bam -o {output.p1b19}")
+
+# coverage breath -
+# Hg genome size: 3272089205
+# REF_GENOME_FILE=/hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/human/GCF_000001405.39_GRCh38.p13_genomic.fna
+
+# dg genome size: 2410976875
+# /hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/dog/GCF_000002285.3_CanFam3.1_genomic.fna
+
+# cat genome size: 2521863845
+# /hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/cat/GCF_000181335.3_Felis_catus_9.0_genomic.fna 
+
+# guinea pig genome size: 2723219641
+# /hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/guinea_pig/GCF_000151735.1_Cavpor3.0_genomic.fna
+#
+#rat genome size: 2870184193
+# /hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/rat/GCF_000001895.5_Rnor_6.0_genomic.fna 
+#
+# mice genome size: 2807715301
+# /hpcdata/dcr_cc/Ousmane_Data/DATA/genomesDB/mouse/GCF_000001635.25_GRCm38.p5_genomic.fna
+# MIN_COVERAGE_DEPTH=2
+# samtools mpileup ../../data/processed/Cell_2018/mapping/SRR6399562_hum.bam | awk -v X="${MIN_COVERAGE_DEPTH}" '$4>=X' | wc -l # 2911302
+# samtools mpileup ../../data/processed/Cell_2018/mapping/SRR6399562_dog.bam | awk -v X="${MIN_COVERAGE_DEPTH}" '$4>=X' | wc -l # 1051922
+# samtools mpileup ../../data/processed/Cell_2018/mapping/SRR6399562_cat.bam | awk -v X="${MIN_COVERAGE_DEPTH}" '$4>=X' | wc -l # 1626577
+# samtools mpileup ../../data/processed/Cell_2018/mapping/SRR6399562_gpig.bam | awk -v X="${MIN_COVERAGE_DEPTH}" '$4>=X' | wc -l # 1197433
+#
+#
+### mapping to dog, cat, guinea pig see bash scripts
+

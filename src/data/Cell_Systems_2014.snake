@@ -1,0 +1,41 @@
+"""
+Author: O. Cisse
+Affiliation: NIH
+Aim: A simple Snakemake workflow to screen air metagenome data
+Date: Fri Jul  5 17:10:56 EDT 2019
+Run: snakemake   -s Snakefile   
+Latest modification: 
+  - todo
+"""
+
+# generate the sample file w this
+# perl ../tools/generate_config_samples.pl ../../data/raw/Cell_Systems_2014/fastq > Cell_Systems_2014_samples.yaml
+configfile: "Cell_Systems_2014_samples.yaml"
+
+rule all:
+    input:
+        bam=expand("../../data/processed/mapping/Cell_Systems_2014/{sample}.bam", sample=config["samples"])
+
+rule bowtie2:
+    input:
+        sample=["../../data/raw/Cell_Systems_2014/fastq/{sample}_1.fastq.gz", "../../data/raw/Cell_Systems_2014/fastq/{sample}_2.fastq.gz"]
+#        #lambda wildcards: config["samples"][wildcards.sample]
+    output:
+        "../../data/processed/mapping/Cell_Systems_2014/{sample}.bam"
+    log:
+        "../../data/processed/mapping/bowtie2/{sample}.log"
+    params:
+        index="../../data/raw/all_known_pneumocystis",
+        extra="--no-unal"    
+    threads: 8
+    wrapper:
+        "0.35.1/bio/bowtie2/align"
+
+# most of the files are filled w ribosomal regions that are not conclusive
+# is there somthing else? test on the biggest 
+#samtools view SRR1749739.bam | grep -v ^@ | awk 'NR%2==1 {print "@"$1"\n"$10"\n+\n"$11}' | gzip - >  SRR1749739_mapped_1.fq.gz
+#samtools view SRR1749739.bam | grep -v ^@ | awk 'NR%2==0 {print "@"$1"\n"$10"\n+\n"$11}' | gzip - >  SRR1749739_mapped_2.fq.gz
+#spades.py -1 SRR1749739_mapped_1.fq.gz -2 SRR1749739_mapped_2.fq.gz --meta -o SRR1749739_assembly  
+# only 21 ctgs and all are ribosomal sequences with better hits against other organisms. Since this is by far the best sample (i.e. more sequences mapped)
+# the other have relatively few reads, so it's unlikely that the assembly will succeed (because of low coverage)
+# conclusion - no conclusive evidence of pneumocysits here
