@@ -1,6 +1,8 @@
 ### Human exposure to the airbone fungal pathogens *Pneumocystis*
 
-Manuscript under revision (will be updated soon)
+Cisse OH, Ma L, Jiang C, Snyder M, Kovacs JA. 2020. Humans Are Selectively Exposed to *Pneumocystis jirovecii*. mBio 11 (2) e03138-19; DOI: 10.1128/mBio.03138-19
+
+
 
 #### Directory:
 * src/data/:  workhorse scripts
